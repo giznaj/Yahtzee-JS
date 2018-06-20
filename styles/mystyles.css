@@ -2,17 +2,6 @@
 # Aaron Toth - May 24/2018
 */
 
-.button {
-    background-color: #4CAF50; /* Green */
-    border: none;
-    color: white;
-    padding: 15px 32px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-}
-
 button.cssbutton {
     background-color: #4CAF50; /* Green */
     border: none;
@@ -28,6 +17,8 @@ input.cssbutton {
     background-color: white;
     color: black;
     border: 2px solid #4CAF50; /* Green */ 
+    width: 80px;
+    height: 30px;
 
     -webkit-transition-duration: 0.4s; /* Safari */
     transition-duration: 0.4s;
@@ -37,4 +28,3 @@ input.cssbutton:hover{
     background-color: #4CAF50; /* Green */
     color: white;
 }
-

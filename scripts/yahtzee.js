@@ -4,6 +4,11 @@
 var done="x";
 var number=1;
 var yahtzeez=0;
+var dice1=0;
+var dice2=0;
+var dice3=0;
+var dice4=0;
+var dice5=0;
 
 // Array of selections to pick from in the category dropdown menu
 var yahtzbox_array=new Array();
@@ -87,29 +92,23 @@ function score_checker()
 	{
 		if((yahtzbox_array[x].value!="")&&(x==13))
 		{
-			yahtzlogger("Game over...");
-			alert("Game over...");
 			if(document.yahtzform.runbonus.value>=63)
 			{
-				yahtzlogger("You finished with " +total+ " points...");
-				alert("You finished with " +total+ " points...");
-				yahtzlogger("You earned the 35 bonus points...");
-				alert("You earned the 35 bonus points...");
 				total=total+35;
-				yahtzlogger("Your new total is now " +total+ " points...");
 				document.yahtzform.yahtzmsg.value=total;
-				alert("Your new total is now " +total+ " points...");
 				yahtzrecords(name+ " - " +total+ " - " +stamp);
-				// document.yahtzform.nextbutton.disabled=true;
+				yahtzlogger("Game over.\nYou earned the 35 bonus points.\nYour new total is " +total+ " points.");
+				alert("Game over.\nYou earned the 35 bonus points.\nYour new total is " +total+ " points.");
+				//document.yahtzform.nextbutton.disabled=true;
+				this._end_game();
 			}
 			else
 			{
-				yahtzlogger("You didn't earn the bonus points...");
-				alert("You didn't earn the bonus points...");
-				yahtzlogger("You finished with " +total+ " points...");
-				alert("You finished with " +total+ " points...");
+				yahtzlogger("Game over.\nYou didn't earn the 35 bonus points.\nYour total is " +total+ " points.");
 				yahtzrecords(name+ " - " +total+ " - " +stamp);
+				alert("Game over.\nYou didn't earn the 35 bonus points.\nYour total is " +total+ " points.");
 				// document.yahtzform.nextbutton.disabled=true;
+				this._end_game();
 			}
 		}
 		else if(yahtzbox_array[x].value=="x")
@@ -159,26 +158,31 @@ function roll()
 	{
 		var num1=(Math.round(Math.random()*5)+1);
 		document.yahtzform.yahtzdice1.value=num1;
+		dice1=num1;
 	}
 	if(document.yahtzform.chkyahtzbox2.checked!=true)
 	{
 		var num2=(Math.round(Math.random()*5)+1);
 		document.yahtzform.yahtzdice2.value=num2;
+		dice2=num2;
 	}
 	if(document.yahtzform.chkyahtzbox3.checked!=true)
 	{
 		var num3=(Math.round(Math.random()*5)+1);
 		document.yahtzform.yahtzdice3.value=num3;
+		dice3=num3;
 	}
 	if(document.yahtzform.chkyahtzbox4.checked!=true)
 	{
 		var num4=(Math.round(Math.random()*5)+1);
 		document.yahtzform.yahtzdice4.value=num4;
+		dice4=num4;
 	}
 	if(document.yahtzform.chkyahtzbox5.checked!=true)
 	{
 		var num5=(Math.round(Math.random()*5)+1);
-	document.yahtzform.yahtzdice5.value=num5;
+		document.yahtzform.yahtzdice5.value=num5;
+		dice5=num5;
 	}
 }
 
@@ -195,22 +199,22 @@ function wastemy()
 
 	if(Number(document.yahtzform.yahtzturn.value==0))
 	{
-		yahtzlogger("You haven't rolled the dice yet...");
+		yahtzlogger("-- You haven't rolled the dice yet...");
 	}
 	else if(yahtzwasteindex==0)
 	{
-		yahtzlogger("You have to choose a category first...");
+		yahtzlogger("-- You have to choose a category first...");
 	}
 
 	else if(yahtzbox_array[yahtzwasteindex].value=="x")
 	{
-		yahtzlogger("You already used this category...");
+		yahtzlogger("-- You already used this category...");
 	}
 	else
 	{
 		yahtzdisable(done);
 		x=document.yahtzform.yahtzmenu.selectedIndex;
-		yahtzlogger("You took a zero for your " +document.yahtzform.yahtzmenu.options[x].text);
+		yahtzlogger("-- You took a zero for your " +document.yahtzform.yahtzmenu.options[x].text);
 		this.nextturn();
 		score_checker();
 	}
@@ -234,15 +238,15 @@ function yahtzstand()
 	var sum=(Number(num[0]+num[1]+num[2]+num[3]+num[4]));
 	if(Number(document.yahtzform.yahtzturn.value==0))
 	{
-		yahtzlogger("You haven't rolled the dice yet...")
+		yahtzlogger("-- You haven't rolled the dice yet...")
 	}
 	else if(yahtzstandindex==0)
 	{
-		yahtzlogger("You have to choose a category first...");
+		yahtzlogger("-- You have to choose a category first...");
 	}
 	else if(yahtzbox_array[yahtzstandindex].value=="x")
 	{
-		yahtzlogger("You already used this category...");
+		yahtzlogger("-- You already used this category...");
 	}
 	else
 	{
@@ -251,7 +255,7 @@ function yahtzstand()
 		{
 			if(((((num[0]!=1)&&(num[1]!=1))&&(num[2]!=1))&&(num[3]!=1))&&(num[4]!=1))
 			{
-				yahtzlogger("You don't have any 1's...");
+				yahtzlogger("-- You don't have any 1's...");
 			}
 			else
 			{
@@ -268,7 +272,7 @@ function yahtzstand()
 				document.yahtzform.yahtzmsg.value=onesum+total;
 				document.yahtzform.runbonus.value=onesum+bonustotal;
 				yahtzdisable(done);
-				yahtzlogger("--earned " +onesum+ " points for your 1's");
+				yahtzlogger("-- earned " +onesum+ " points for your 1's. " +dice1+", "+dice2+", "+dice3+", "+dice4+", "+dice5);
 				saveSuccessful=true;
 				this.nextturn();
 				score_checker();
@@ -281,7 +285,7 @@ function yahtzstand()
 		{
 			if(((((num[0]!=2)&&(num[1]!=2))&&(num[2]!=2))&&(num[3]!=2))&&(num[4]!=2))
 			{
-				yahtzlogger("You don't have any 2's...");
+				yahtzlogger("-- You don't have any 2's...");
 			}
 			else
 			{
@@ -300,7 +304,7 @@ function yahtzstand()
 				document.yahtzform.yahtzmsg.value=twosum+total;
 				document.yahtzform.runbonus.value=twosum+bonustotal;
 				yahtzdisable(done);
-				yahtzlogger("--earned " +twosum+ " points for your 2's");
+				yahtzlogger("-- earned " +twosum+ " points for your 2's");
 				this.nextturn();
 				score_checker();
 			}
@@ -312,7 +316,7 @@ function yahtzstand()
 		{
 			if(((((num[0]!=3)&&(num[1]!=3))&&(num[2]!=3))&&(num[3]!=3))&&(num[4]!=3))
 			{
-				yahtzlogger("You don't have any 3's...");
+				yahtzlogger("-- You don't have any 3's...");
 			}
 			else
 			{
@@ -331,7 +335,7 @@ function yahtzstand()
 				document.yahtzform.yahtzmsg.value=threesum+total;
 				document.yahtzform.runbonus.value=threesum+bonustotal;
 				yahtzdisable(done);
-				yahtzlogger("--earned " +threesum+ " points for your 3's");
+				yahtzlogger("-- earned " +threesum+ " points for your 3's");
 				this.nextturn();
 				score_checker();
 			}
@@ -343,7 +347,7 @@ function yahtzstand()
 		{
 			if(((((num[0]!=4)&&(num[1]!=4))&&(num[2]!=4))&&(num[3]!=4))&&(num[4]!=4))
 			{
-				yahtzlogger("You don't have any 4's...");
+				yahtzlogger("-- You don't have any 4's...");
 			}
 			else
 			{
@@ -362,7 +366,7 @@ function yahtzstand()
 				document.yahtzform.yahtzmsg.value=foursum+total;
 				document.yahtzform.runbonus.value=foursum+bonustotal;
 				yahtzdisable(done);
-				yahtzlogger("--earned " +foursum+ " points for your 4's");
+				yahtzlogger("-- earned " +foursum+ " points for your 4's");
 				this.nextturn();
 				score_checker();
 			}
@@ -374,7 +378,7 @@ function yahtzstand()
 		{
 			if(((((num[0]!=5)&&(num[1]!=5))&&(num[2]!=5))&&(num[3]!=5))&&(num[4]!=5))
 			{
-				yahtzlogger("You don't have any 5's...");
+				yahtzlogger("-- You don't have any 5's...");
 			}
 			else
 			{
@@ -393,7 +397,7 @@ function yahtzstand()
 				document.yahtzform.yahtzmsg.value=fivesum+total;
 				document.yahtzform.runbonus.value=fivesum+bonustotal;
 				yahtzdisable(done);
-				yahtzlogger("--earned " +fivesum+ " points for your 5's");
+				yahtzlogger("-- earned " +fivesum+ " points for your 5's");
 				this.nextturn();
 				score_checker();
 			}
@@ -405,7 +409,7 @@ function yahtzstand()
 		{
 			if(((((num[0]!=6)&&(num[1]!=6))&&(num[2]!=6))&&(num[3]!=6))&&(num[4]!=6))
 			{
-				yahtzlogger("You don't have any 6's...");
+				yahtzlogger("-- You don't have any 6's...");
 			}
 			else
 			{
@@ -424,7 +428,7 @@ function yahtzstand()
 				document.yahtzform.yahtzmsg.value=sixsum+total;
 				document.yahtzform.runbonus.value=sixsum+bonustotal;
 				yahtzdisable(done);
-				yahtzlogger("--earned " +sixsum+ " points for your 6's");
+				yahtzlogger("-- earned " +sixsum+ " points for your 6's");
 				this.nextturn();
 				score_checker();
 			}
@@ -448,13 +452,13 @@ function yahtzstand()
 							x=7;
 							y=5;
 							yahtzdisable(done);
-							yahtzlogger("--earned " +sum+ " points for your 3 of a kind");
+							yahtzlogger("-- earned " +sum+ " points for your 3 of a kind");
 							this.nextturn();
 							score_checker();
 						}
 						else if(((sum3kind<3)&&(x==6))&&(y==4))
 						{
-							yahtzlogger("you don't have 3 of a kind");
+							yahtzlogger("-- you don't have 3 of a kind");
 							x=7;
 							y=5;
 						}
@@ -469,7 +473,7 @@ function yahtzstand()
 					}
 					else if(((sum3kind<3)&&(x==6))&&(y==4))
 					{
-						yahtzlogger("you don't have 3 of a kind");
+						yahtzlogger("-- you don't have 3 of a kind");
 						x=7;
 						y=5;
 					}
@@ -503,13 +507,13 @@ function yahtzstand()
 							x=7;
 							y=5;
 							yahtzdisable(done);
-							yahtzlogger("--earned " +sum+ " points for your 4 of a kind");
+							yahtzlogger("-- earned " +sum+ " points for your 4 of a kind");
 							this.nextturn();
 							score_checker();
 						}
 						else if(((sum4kind<4)&&(x==6))&&(y==4))
 						{
-							yahtzlogger("you don't have 4 of a kind");
+							yahtzlogger("-- you don't have 4 of a kind");
 							x=7;
 							y=5;
 						}
@@ -524,7 +528,7 @@ function yahtzstand()
 					}
 					else if(((sum4kind<4)&&(x==6))&&(y==4))
 					{
-						yahtzlogger("you don't have 4 of a kind");
+						yahtzlogger("-- you don't have 4 of a kind");
 						x=7;
 						y=5;
 					}
@@ -559,13 +563,13 @@ function yahtzstand()
 							x=7;
 							y=5;
 							yahtzdisable(done);
-							yahtzlogger("--earned " +sum+ " points for your 4 card straight");
+							yahtzlogger("-- earned " +sum+ " points for your 4 card straight");
 							this.nextturn();
 							score_checker();
 						}
 						else if(((x==6))&&((smallstr8<5))&&(y==4))
 						{
-							yahtzlogger("you don't have a 4 card straight");
+							yahtzlogger("-- you don't have a 4 card straight");
 							x=7;
 							y=5;
 						}
@@ -580,25 +584,25 @@ function yahtzstand()
 					}
 					else if(((x==3)&&(smallstr8<=2))&&(y==4))
 					{
-						yahtzlogger("you don't have a 4 card straight");
+						yahtzlogger("-- you don't have a 4 card straight");
 						x=7;
 						y=5;
 					}
 					else if(((x==4)&&(smallstr8<=2))&&(y==4))
 					{
-						yahtzlogger("you don't have a 4 card straight");
+						yahtzlogger("-- you don't have a 4 card straight");
 						x=7;
 						y=5;
 					}
 					else if(((x==5)&&(smallstr8<=3))&&(y==4))
 					{
-						yahtzlogger("you don't have a 4 card straight");
+						yahtzlogger("-- you don't have a 4 card straight");
 						x=7;
 						y=5;
 					}
 					else if(((x==6)&&(smallstr8<4))&&(y==4))
 					{
-						yahtzlogger("you don't have a 4 card straight");
+						yahtzlogger("-- you don't have a 4 card straight");
 						x=7;
 						y=5;
 					}
@@ -629,13 +633,13 @@ function yahtzstand()
 							x=7;
 							y=5;
 							yahtzdisable(done);
-							yahtzlogger("--earned " +sum+ " points for your 5 card straight");
+							yahtzlogger("-- earned " +sum+ " points for your 5 card straight");
 							this.nextturn();
 							score_checker();
 						}
 						else if(((x==6))&&((largestr8<5))&&(y==4))
 						{
-							yahtzlogger("you don't have a 5 card straight");
+							yahtzlogger("-- you don't have a 5 card straight");
 							x=7;
 							y=5;
 						}
@@ -646,31 +650,31 @@ function yahtzstand()
 					}
 					else if(((x==2)&&(largestr8<=1))&&(y==4))
 					{
-						yahtzlogger("you don't have a 5 card straight");
+						yahtzlogger("-- you don't have a 5 card straight");
 						x=7;
 						y=5;
 					}
 					else if(((x==3)&&(largestr8<=2))&&(y==4))
 					{
-						yahtzlogger("you don't have a 5 card straight");
+						yahtzlogger("-- you don't have a 5 card straight");
 						x=7;
 						y=5;
 					}
 					else if(((x==4)&&(largestr8<=3))&&(y==4))
 					{
-						yahtzlogger("you don't have a 5 card straight");
+						yahtzlogger("-- you don't have a 5 card straight");
 						x=7;
 						y=5;
 					}
 					else if(((x==5))&&((largestr8<5))&&(y==4))
 					{
-						yahtzlogger("you don't have a 5 card straight");
+						yahtzlogger("-- you don't have a 5 card straight");
 						x=7;
 						y=5;
 					}
 					else if(((x==6))&&((largestr8<5))&&(y==4))
 					{
-						yahtzlogger("you don't have a 5 card straight");
+						yahtzlogger("-- you don't have a 5 card straight");
 						x=7;
 						y=5;
 					}
@@ -712,13 +716,13 @@ function yahtzstand()
 											yahtzform.yahtzmsg.value=total+25
 											var sum=25;
 											yahtzdisable(done);
-											yahtzlogger("--earned " +sum+ " points for your Full House");
+											yahtzlogger("-- earned " +sum+ " points for your Full House");
 											this.nextturn();
 											score_checker();
 										}
 										else if(((twosum<2)&&(a==6))&&(b==4))
 										{
-											yahtzlogger("You don't have a full house...");
+											yahtzlogger("-- You don't have a full house...");
 											a=7;
 											b=5;
 										}
@@ -733,7 +737,7 @@ function yahtzstand()
 									}
 									else if(((twosum<2)&&(a==6))&&(b==4))
 									{
-										yahtzlogger("You don't have a full house...");
+										yahtzlogger("-- You don't have a full house...");
 										a=7;
 										b=5;
 									}
@@ -742,7 +746,7 @@ function yahtzstand()
 						}
 						else if(((threesum<3)&&(x==6))&&(y==4))
 						{
-							yahtzlogger("You don't have a full house...");
+							yahtzlogger("-- You don't have a full house...");
 							x=7;
 							y=5;
 						}
@@ -757,7 +761,7 @@ function yahtzstand()
 					}
 					else if (((threesum<3)&&(x==6))&&(y==4))
 					{
-						yahtzlogger("You don't have a full house...");
+						yahtzlogger("-- You don't have a full house...");
 						x=7;
 						y=5;
 					}
@@ -779,7 +783,7 @@ function yahtzstand()
 		{
 			document.yahtzform.yahtzmsg.value=total+sum;
 			yahtzdisable(done);
-			yahtzlogger("--earned " +sum+ " points for your chance");
+			yahtzlogger("-- earned " +sum+ " points for your chance");
 			this.nextturn();
 			score_checker();
 		}
@@ -790,20 +794,20 @@ function yahtzstand()
 		{
 			if((((num[0]!=num[1])||(num[0]!=num[2]))||(num[0]!=num[3]))||(num[0]!=num[4]))
 			{
-				yahtzlogger("You don't have a Yahtzee...");
+				yahtzlogger("-- You don't have a Yahtzee...");
 			}
 			else
 			{
 				if(document.yahtzform.yahtzbox13.value==0)
 				{
-					yahtzlogger("--earned 50 points for your first YAHTZEE!");
+					yahtzlogger("-- earned 50 points for your first YAHTZEE!");
 					document.yahtzform.yahtzmsg.value=total+50;
 					yahtzeez++;
 					yahtzdisable(number);
 				}
 				else
 				{
-					yahtzlogger("--EARNED 100 POINTS FOR YOUR NEXT YAHTZEE!!");
+					yahtzlogger("-- EARNED 100 POINTS FOR YOUR NEXT YAHTZEE!!");
 					document.yahtzform.yahtzmsg.value=total+100;
 					yahtzeez++;
 					yahtzdisable(number);
@@ -867,6 +871,15 @@ function new_game()
 	{
 
 	}
+}
+
+// This function disables the board after a game is over
+function end_game()
+{
+	document.yahtzform.rollbutton.disabled=true;
+	document.yahtzform.standbutton.disabled=true;
+	document.yahtzform.wastebutton.disabled=true;
+	// document.yahtzform.nextbutton.disabled=true;
 }
 
 // This function opens up a basic help alert message box -->
