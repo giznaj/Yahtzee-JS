@@ -1,6 +1,9 @@
 <html>
 <head>
 <title>yahtzee</title>
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta content="utf-8" http-equiv="encoding">
+<link rel="stylesheet" type="text/css" href="mystyles.css" media="screen" />
 </head>
 
 <body>
@@ -17,19 +20,20 @@
 <td rowspan="2" align=center>
 
 <!-- these are the buttons along the left side of game board -->
-<input type="button" value="roll dice" name="rollbutton" onClick="roll()"><br><br>
-<input type="button" value="take score" name="standbutton" onClick="yahtzstand()"><br><br>
-<input type="button" value="next turn" name="nextbutton" onclick="nextturn()"><br><br>
-<input type="button" value="help" name="helpbutton" onclick="help_alert()"><br><br>
-<input type="button" value="take zero" name="wastebutton" onClick="wastemy()">
+<input type="button" value="roll dice" name="rollbutton" onClick="roll()" class="cssbutton"><br><br>
+<input type="button" value="take score" name="standbutton" onClick="yahtzstand()" class="cssbutton"><br><br>
+<!-- <input type="button" value="next turn" name="nextbutton" onclick="nextturn()"><br><br> -->
+<input type="button" value="take zero" name="wastebutton" onClick="wastemy()" class="cssbutton"><br><br>
+<input type="button" value="help" name="helpbutton" onclick="help_alert()" class="cssbutton">
 </td>
 
 <!-- these are the five dice boxes -->
-<td align=center>dice 1<br><input type="text" name="yahtzdice1" maxlength="1" size="1" disabled="true" onFocus="nice_try()"></td>
-<td align=center>dice 2<br><input type="text" name="yahtzdice2" maxlength="1" size="1" disabled="true" onFocus="nice_try()"></td>
-<td align=center>dice 3<br><input type="text" name="yahtzdice3" maxlength="1" size="1" disabled="true" onFocus="nice_try()"></td>
-<td align=center>dice 4<br><input type="text" name="yahtzdice4" maxlength="1" size="1" disabled="true" onFocus="nice_try()"></td>
-<td align=center>dice 5<br><input type="text" name="yahtzdice5" maxlength="1" size="1" disabled="true" onFocus="nice_try()"></td>
+<!-- <td align=center>dice 1<br><input type="text" name="yahtzdice1" maxlength="1" size="1" disabled="true" ></td> -->
+<td align=center><img src="images\pairdice.jpg"><br><input type="text" name="yahtzdice1" maxlength="1" size="1" disabled="true" ></td>
+<td align=center><img src="images\pairdice.jpg"><br><input type="text" name="yahtzdice2" maxlength="1" size="1" disabled="true" ></td>
+<td align=center><img src="images\pairdice.jpg"><br><input type="text" name="yahtzdice3" maxlength="1" size="1" disabled="true" ></td>
+<td align=center><img src="images\pairdice.jpg"><br><input type="text" name="yahtzdice4" maxlength="1" size="1" disabled="true" ></td>
+<td align=center><img src="images\pairdice.jpg"><br><input type="text" name="yahtzdice5" maxlength="1" size="1" disabled="true" ></td>
 
 <!-- This is the select menu (drop down menu of options) -->
 <td rowspan="2" align=center>
@@ -51,22 +55,22 @@
 </SELECT>
 <br>
 running score<br>
-<input type="text" name="yahtzmsg" maxlength="11" size="11" value="0" disabled="true" onFocus="nice_try()"><br>
+<input type="text" name="yahtzmsg" maxlength="11" size="11" value="0" disabled="true" ><br>
 <hr>
 running bonus<br>
-<input type="text" name="runbonus" maxlength="11" size="11" value="0" disabled="true" onFocus="nice_try()"><br><br>
+<input type="text" name="runbonus" maxlength="11" size="11" value="0" disabled="true" ><br><br>
 <hr>
-<input type="button" value="new game" onClick="new_game()">
+<input type="button" value="new game" onClick="new_game()" class="cssbutton">
 </td>
 
 <!-- These make up the top row on the right side of the game board -->
-<td align=center>1's<br><input type="text" name="yahtzbox1" maxlength="1" size="1" disabled="true" onFocus="nice_try()"></td>&nbsp;
-<td align=center>2's<br><input type="text" name="yahtzbox2" maxlength="1" size="1" disabled="true" onFocus="nice_try()"></td>&nbsp;
-<td align=center>3's<br><input type="text" name="yahtzbox3" maxlength="1" size="1" disabled="true" onFocus="nice_try()"></td>&nbsp;
-<td align=center>4's<br><input type="text" name="yahtzbox4" maxlength="1" size="1" disabled="true" onFocus="nice_try()"></td>&nbsp;
-<td align=center>5's<br><input type="text" name="yahtzbox5" maxlength="1" size="1" disabled="true" onFocus="nice_try()"></td>&nbsp;
-<td align=center>6's<br><input type="text" name="yahtzbox6" maxlength="1" size="1" disabled="true" onFocus="nice_try()"></td>&nbsp;
-<td align=center>Turn<br><input type="text" name="yahtzturn" maxlength="1" size="1" value="0" disabled="true" onFocus="nice_try()"></td>
+<td align=center>1's<br><input type="text" name="yahtzbox1" maxlength="1" size="1" disabled="true" ></td>&nbsp;
+<td align=center>2's<br><input type="text" name="yahtzbox2" maxlength="1" size="1" disabled="true" ></td>&nbsp;
+<td align=center>3's<br><input type="text" name="yahtzbox3" maxlength="1" size="1" disabled="true" ></td>&nbsp;
+<td align=center>4's<br><input type="text" name="yahtzbox4" maxlength="1" size="1" disabled="true" ></td>&nbsp;
+<td align=center>5's<br><input type="text" name="yahtzbox5" maxlength="1" size="1" disabled="true" ></td>&nbsp;
+<td align=center>6's<br><input type="text" name="yahtzbox6" maxlength="1" size="1" disabled="true" ></td>&nbsp;
+<td align=center>Roll<br><input type="text" name="yahtzturn" maxlength="1" size="1" value="0" disabled="true" ></td>
 </tr>
 
 <tr>
@@ -78,13 +82,13 @@ running bonus<br>
 <td align=center>hold<br><input type="checkbox" name="chkyahtzbox5"></td>
 
 <!-- These make up the bottom row of boxes along the bottom right side -->
-<td align=center>3K<br><input type="text" name="yahtzbox7" maxlength="1" size="1" disabled="true" onFocus="nice_try()"></td>&nbsp;
-<td align=center>4K<br><input type="text" name="yahtzbox8" maxlength="1" size="1" disabled="true" onFocus="nice_try()"></td>&nbsp;
-<td align=center>4CS<br><input type="text" name="yahtzbox9" maxlength="1" size="1" disabled="true" onFocus="nice_try()"></td>&nbsp;
-<td align=center>5CS<br><input type="text" name="yahtzbox10" maxlength="1" size="1" disabled="true" onFocus="nice_try()"></td>&nbsp;
-<td align=center>FH<br><input type="text" name="yahtzbox11" maxlength="1" size="1" disabled="true" onFocus="nice_try()"></td>&nbsp;
-<td align=center>?<br><input type="text" name="yahtzbox12" maxlength="1" size="1" disabled="true" onFocus="nice_try()"></td>&nbsp;
-<td align=center>Y<br><input type="text" name="yahtzbox13" maxlength="1" size="1" disabled="true" onFocus="nice_try()"></td>
+<td align=center>3K<br><input type="text" name="yahtzbox7" maxlength="1" size="1" disabled="true" ></td>&nbsp;
+<td align=center>4K<br><input type="text" name="yahtzbox8" maxlength="1" size="1" disabled="true" ></td>&nbsp;
+<td align=center>4CS<br><input type="text" name="yahtzbox9" maxlength="1" size="1" disabled="true" ></td>&nbsp;
+<td align=center>5CS<br><input type="text" name="yahtzbox10" maxlength="1" size="1" disabled="true" ></td>&nbsp;
+<td align=center>FH<br><input type="text" name="yahtzbox11" maxlength="1" size="1" disabled="true" ></td>&nbsp;
+<td align=center>?<br><input type="text" name="yahtzbox12" maxlength="1" size="1" disabled="true" ></td>&nbsp;
+<td align=center>Y<br><input type="text" name="yahtzbox13" maxlength="1" size="1" disabled="true" ></td>
 </tr>
 
 <!-- <tr>
@@ -93,7 +97,7 @@ running bonus<br>
 
 <tr>
 <td colspan="7" align=left><textarea NAME="yahtzlog" cols="51" rows="6" disabled="true"></textarea></td>
-<td colspan="7" align=right><textarea name="yahtzrecords" cols="32" rows="6" onFocus="nice_try()" disabled="true">High Scores</textarea></td>
+<td colspan="7" align=right><textarea name="yahtzrecords" cols="32" rows="6"  disabled="true">High Scores</textarea></td>
 </tr>
 </form>
 </table>
@@ -102,7 +106,7 @@ running bonus<br>
 <script language="javascript" src="yahtzee.js"></script>
 <!-- </script>  -->
 
-<p align=center>version 1.4</p>
+<p align=center>version 1.5</p>
 
 </body>
 </html>

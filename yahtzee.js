@@ -68,7 +68,7 @@ function enable_hold()
 // This function checks if the game is over; checks for the bonus (top half >=63) and applies it to the total score if applicable
 function score_checker()
 {
-	var name=document.yahtzform.yahtzplayer.value;
+	// var name=document.yahtzform.yahtzplayer.value;
 	var currentTime=new Date();
 	var month=currentTime.getMonth()+1;
 	var day=currentTime.getDate();
@@ -99,7 +99,7 @@ function score_checker()
 				document.yahtzform.yahtzmsg.value=total;
 				alert("Your new total is now " +total+ " points...");
 				yahtzrecords(name+ " - " +total+ " - " +stamp);
-				document.yahtzform.nextbutton.disabled=true;
+				// document.yahtzform.nextbutton.disabled=true;
 			}
 			else
 			{
@@ -108,7 +108,7 @@ function score_checker()
 				yahtzlogger("You finished with " +total+ " points...");
 				alert("You finished with " +total+ " points...");
 				yahtzrecords(name+ " - " +total+ " - " +stamp);
-				document.yahtzform.nextbutton.disabled=true;
+				// document.yahtzform.nextbutton.disabled=true;
 			}
 		}
 		else if(yahtzbox_array[x].value=="x")
@@ -131,14 +131,14 @@ function yahtzdisable(done)
 	document.yahtzform.rollbutton.disabled=true;
 	document.yahtzform.standbutton.disabled=true;
 	document.yahtzform.wastebutton.disabled=true;
-	document.yahtzform.nextbutton.disabled=false;
+	// document.yahtzform.nextbutton.disabled=false;
 }
 
 // This function rolls the random di's for the game
 function roll()
 {
 	var turn=(Number(document.yahtzform.yahtzturn.value));
-	document.yahtzform.nextbutton.disabled=true;
+	// document.yahtzform.nextbutton.disabled=true;
 	++turn;
 	document.yahtzform.yahtzturn.value=turn;
 	enable_hold();
@@ -827,7 +827,7 @@ function nextturn()
 	document.yahtzform.rollbutton.disabled=false;
 	document.yahtzform.standbutton.disabled=false;
 	document.yahtzform.wastebutton.disabled=false;
-	document.yahtzform.nextbutton.disabled=true;
+	// document.yahtzform.nextbutton.disabled=true;
 	disable_hold();
 }
 
@@ -843,10 +843,10 @@ function new_game()
 		document.yahtzform.rollbutton.disabled=false;
 		document.yahtzform.standbutton.disabled=false;
 		document.yahtzform.wastebutton.disabled=false;
-		document.yahtzform.nextbutton.disabled=true;
+		// document.yahtzform.nextbutton.disabled=true;
 		document.yahtzform.yahtzmsg.Value="0";
 		document.yahtzform.yahtzlog.value="Good Luck...";
-		document.yahtzform.yahtzplayer.value="name?";
+		// document.yahtzform.yahtzplayer.value="name?";
 		disable_hold();
 	}
 	else
@@ -858,5 +858,5 @@ function new_game()
 // This function opens up a basic help alert message box -->
 function help_alert()
 {
-	alert(" roll dice = rolls the dice \n take score = saves the points for selected category \n next turn = starts next turn, resets roll back to 0 \n help = displays this help text \n take zero = category accepting a zero for \n \n 4CS = 4 card straight \n 5CS = 5 card straight \n FH = full house \n 3K = 3 of a kind \n 4K = 4 of a kind \n ? = chance \n Y = yahtzee \n \n running bonus = current upper deck score \n 63 or higher gets you 35 at the end \n \n http://en.wikipedia.org/wiki/Yahtzee");
+	alert(" roll dice = rolls the dice \n take score = saves the points for selected category \n help = displays this help text \n take zero = category accepting a zero for \n \n 4CS = 4 card straight \n 5CS = 5 card straight \n FH = full house \n 3K = 3 of a kind \n 4K = 4 of a kind \n ? = chance \n Y = yahtzee \n \n running bonus = current upper deck score \n 63 or higher gets you 35 at the end \n \n http://en.wikipedia.org/wiki/Yahtzee");
 }
