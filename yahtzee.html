@@ -8,70 +8,70 @@
 <p align=center>
 <table border=2 cellpadding=2 cellspacing=2 bgcolor="#c8b189">
 <tr>
+		<form name="yahtzform"> 
 <td colspan="14" align=center>Yahtzee</td>
 </tr>
 
+
 <tr>
-
-<!-- This is the game board itself -->
-<form name="yahtzform">
-<td rowspan="2" align=center>
+	<!-- <form name="yahtzform"> -->
+	<td rowspan="2" align=center>
 
 
-<!-- these are the buttons along the left side of game board -->
-<input type="button" value="roll dice" name="rollbutton" onClick="roll()"><br><br>
-<input type="button" value="take score" name="standbutton" onClick="yahtzstand()"><br><br>
-<input type="button" value="next turn" name="nextbutton" onclick="nextturn()"><br><br>
-<input type="button" value="help" name="helpbutton" onclick="help_alert()"><br><br>
-<input type="button" value="take zero" name="wastebutton" onClick="wastemy()">
-</td>
+	<!-- these are the buttons along the left side of game board -->
+	<input type="button" value="roll dice" name="rollbutton" onClick="roll()"><br><br>
+	<input type="button" value="take score" name="standbutton" onClick="yahtzstand()"><br><br>
+	<input type="button" value="next turn" name="nextbutton" onclick="nextturn()"><br><br>
+	<input type="button" value="help" name="helpbutton" onclick="help_alert()"><br><br>
+	<input type="button" value="take zero" name="wastebutton" onClick="wastemy()">
+	</td>
 
 
-<!-- these are the five dice boxes -->
-<td align=center>dice 1<br><input type="text" name="yahtzdice1" maxlength="1" size="1" onFocus="nice_try()"></td>
-<td align=center>dice 2<br><input type="text" name="yahtzdice2" maxlength="1" size="1" onFocus="nice_try()"></td>
-<td align=center>dice 3<br><input type="text" name="yahtzdice3" maxlength="1" size="1" onFocus="nice_try()"></td>
-<td align=center>dice 4<br><input type="text" name="yahtzdice4" maxlength="1" size="1" onFocus="nice_try()"></td>
-<td align=center>dice 5<br><input type="text" name="yahtzdice5" maxlength="1" size="1" onFocus="nice_try()"></td>
+	<!-- these are the five dice boxes -->
+	<td align=center>dice 1<br><input type="text" name="yahtzdice1" maxlength="1" size="1" onFocus="nice_try()"></td>
+	<td align=center>dice 2<br><input type="text" name="yahtzdice2" maxlength="1" size="1" onFocus="nice_try()"></td>
+	<td align=center>dice 3<br><input type="text" name="yahtzdice3" maxlength="1" size="1" onFocus="nice_try()"></td>
+	<td align=center>dice 4<br><input type="text" name="yahtzdice4" maxlength="1" size="1" onFocus="nice_try()"></td>
+	<td align=center>dice 5<br><input type="text" name="yahtzdice5" maxlength="1" size="1" onFocus="nice_try()"></td>
 
 
-<!-- This is the select menu (drop down menu of options) -->
-<td rowspan="2" align=center>
-<SELECT NAME="yahtzmenu" SIZE="1">
-				<OPTION VALUE="invalid">category
-				<OPTION VALUE="yahtzbox1">1's
-				<OPTION VALUE="yahtzbox2">2's
-				<OPTION VALUE="yahtzbox3">3's
-				<OPTION VALUE="yahtzbox4">4's
-				<OPTION VALUE="yahtzbox5">5's
-				<OPTION VALUE="yahtzbox6">6's
-				<OPTION VALUE="yahtzbox7">3 of a kind
-				<OPTION VALUE="yahtzbox8">4 of a kind
-				<OPTION VALUE="yahtzbox9">4 card straight
-				<OPTION VALUE="yahtzbox10">5 card straight
-				<OPTION VALUE="yahtzbox11">full house
-				<OPTION VALUE="yahtzbox12">chance
-				<OPTION VALUE="yahtzbox13">yahtzee
-</SELECT>
-<br>
-running score<br>
-<input type="text" name="yahtzmsg" maxlength="11" size="11" value="0" onFocus="nice_try()"><br>
-<hr>
-running bonus<br>
-<input type="text" name="runbonus" maxlength="11" size="11" value="0" onFocus="nice_try()"><br><br>
-<hr>
-<input type="button" value="new game" onClick="new_game()">
-</td>
+	<!-- This is the select menu (drop down menu of options) -->
+	<td rowspan="2" align=center>
+	<SELECT NAME="yahtzmenu" SIZE="1">
+					<OPTION VALUE="invalid">category
+					<OPTION VALUE="yahtzbox1">1's
+					<OPTION VALUE="yahtzbox2">2's
+					<OPTION VALUE="yahtzbox3">3's
+					<OPTION VALUE="yahtzbox4">4's
+					<OPTION VALUE="yahtzbox5">5's
+					<OPTION VALUE="yahtzbox6">6's
+					<OPTION VALUE="yahtzbox7">3 of a kind
+					<OPTION VALUE="yahtzbox8">4 of a kind
+					<OPTION VALUE="yahtzbox9">4 card straight
+					<OPTION VALUE="yahtzbox10">5 card straight
+					<OPTION VALUE="yahtzbox11">full house
+					<OPTION VALUE="yahtzbox12">chance
+					<OPTION VALUE="yahtzbox13">yahtzee
+	</SELECT>
+	<br>
+	running score<br>
+	<input type="text" name="yahtzmsg" maxlength="11" size="11" value="0" onFocus="nice_try()"><br>
+	<hr>
+	running bonus<br>
+	<input type="text" name="runbonus" maxlength="11" size="11" value="0" onFocus="nice_try()"><br><br>
+	<hr>
+	<input type="button" value="new game" onClick="new_game()">
+	</td>
 
 
-<!-- These make up the top row on the right side of the game board -->
-<td align=center>1's<br><input type="text" name="yahtzbox1" maxlength="1" size="1" onFocus="nice_try()"></td>&nbsp;
-<td align=center>2's<br><input type="text" name="yahtzbox2" maxlength="1" size="1" onFocus="nice_try()"></td>&nbsp;
-<td align=center>3's<br><input type="text" name="yahtzbox3" maxlength="1" size="1" onFocus="nice_try()"></td>&nbsp;
-<td align=center>4's<br><input type="text" name="yahtzbox4" maxlength="1" size="1" onFocus="nice_try()"></td>&nbsp;
-<td align=center>5's<br><input type="text" name="yahtzbox5" maxlength="1" size="1" onFocus="nice_try()"></td>&nbsp;
-<td align=center>6's<br><input type="text" name="yahtzbox6" maxlength="1" size="1" onFocus="nice_try()"></td>&nbsp;
-<td align=center>Turn<br><input type="text" name="yahtzturn" maxlength="1" size="1" value="0" onFocus="nice_try()"></td>
+	<!-- These make up the top row on the right side of the game board -->
+	<td align=center>1's<br><input type="text" name="yahtzbox1" maxlength="1" size="1" onFocus="nice_try()"></td>&nbsp;
+	<td align=center>2's<br><input type="text" name="yahtzbox2" maxlength="1" size="1" onFocus="nice_try()"></td>&nbsp;
+	<td align=center>3's<br><input type="text" name="yahtzbox3" maxlength="1" size="1" onFocus="nice_try()"></td>&nbsp;
+	<td align=center>4's<br><input type="text" name="yahtzbox4" maxlength="1" size="1" onFocus="nice_try()"></td>&nbsp;
+	<td align=center>5's<br><input type="text" name="yahtzbox5" maxlength="1" size="1" onFocus="nice_try()"></td>&nbsp;
+	<td align=center>6's<br><input type="text" name="yahtzbox6" maxlength="1" size="1" onFocus="nice_try()"></td>&nbsp;
+	<td align=center>Turn<br><input type="text" name="yahtzturn" maxlength="1" size="1" value="0" onFocus="nice_try()"></td>
 </tr>
 
 
@@ -109,11 +109,10 @@ running bonus<br>
 </p>
 
 
-<!-- <script language="javascript"> -->
 <script language="javascript" src="yahtzee.js"></script>
 <!-- </script>  -->
 
-<p align=center>version 1.2</p>
+<p align=center>version 1.3</p>
 
 </body>
 </html>
