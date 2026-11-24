@@ -1,862 +1,764 @@
-// External JS file for Yahtzee.html
+// ========================================================
+// Yahtzee-JS - Core Game Logic & Rules Engine
+// ========================================================
 
-// Global vars
-var done="x";
-var first="o";
+// Global Game State
+var dice = [1, 1, 1, 1, 1];
+var held = [false, false, false, false, false];
+var rollCount = 0;       // 0, 1, 2, or 3
+var currentTurn = 1;     // Turn 1 to 13
+var totalScore = 0;
+var upperScore = 0;
+var bonusScore = 0;
+var lowerScore = 0;
+var yahtzeeBonus = 0;    // Count of bonus Yahtzees (each +100)
+var firstYahtzeeScored = false;
 
-// Array of selections to pick from in the category dropdown menu
-var yahtzbox_array=new Array();
-yahtzbox_array[0]=document.yahtzform.invalid; // invalid
-yahtzbox_array[1]=document.yahtzform.yahtzbox1; // 1's
-yahtzbox_array[2]=document.yahtzform.yahtzbox2; // 2's
-yahtzbox_array[3]=document.yahtzform.yahtzbox3; // 3's
-yahtzbox_array[4]=document.yahtzform.yahtzbox4; // 4's
-yahtzbox_array[5]=document.yahtzform.yahtzbox5; // 5's
-yahtzbox_array[6]=document.yahtzform.yahtzbox6; // 6's
-yahtzbox_array[7]=document.yahtzform.yahtzbox7; // 3 of a kind
-yahtzbox_array[8]=document.yahtzform.yahtzbox8; // 4 of a kind
-yahtzbox_array[9]=document.yahtzform.yahtzbox9; //  4 card straight
-yahtzbox_array[10]=document.yahtzform.yahtzbox10; // 5 card straight
-yahtzbox_array[11]=document.yahtzform.yahtzbox11; // full house
-yahtzbox_array[12]=document.yahtzform.yahtzbox12; // chance
-yahtzbox_array[13]=document.yahtzform.yahtzbox13; // yahtzee
+// Category scores: null = open, number = scored (including 0)
+var categoryScores = {
+  1: null,  // 1's
+  2: null,  // 2's
+  3: null,  // 3's
+  4: null,  // 4's
+  5: null,  // 5's
+  6: null,  // 6's
+  7: null,  // 3 of a Kind
+  8: null,  // 4 of a Kind
+  9: null,  // Small Straight (30)
+  10: null, // Large Straight (40)
+  11: null, // Full House (25)
+  12: null, // Chance (sum)
+  13: null  // Yahtzee (50)
+};
 
-// This function will write to the continuous log window
-function yahtzlogger(logentry)
-{
-	var oldtext=document.yahtzform.yahtzlog.value;
-	document.yahtzform.yahtzlog.value+="\r" +logentry+ "";
-	scrollElementToEnd(document.yahtzform.yahtzlog);
+// Legacy form compatibility mappings
+var yahtzbox_array = new Array();
+
+// Initialize on DOM load
+window.addEventListener("DOMContentLoaded", function () {
+  initLegacyBindings();
+  loadHighScores();
+  renderDice();
+  updateUI();
+  yahtzlogger("Welcome to Yahtzee! Click 'Roll Dice' to begin.");
+});
+
+function initLegacyBindings() {
+  if (!document.yahtzform) return;
+  yahtzbox_array[0] = { value: "" }; // dummy invalid
+  for (var i = 1; i <= 13; i++) {
+    yahtzbox_array[i] = document.yahtzform["yahtzbox" + i];
+  }
 }
 
-// This function writes the new high score to the text box
-function yahtzrecords(newrecord)
-{
-	var oldrecord=document.yahtzform.yahtzrecords.value;
-	document.yahtzform.yahtzrecords.value+="\r" +newrecord+ "";
+// ========================================================
+// SCENARIO SCORING CALCULATIONS (Fixed & Comprehensive)
+// ========================================================
+
+function getDiceCounts(d) {
+  var counts = {};
+  for (var i = 0; i < d.length; i++) {
+    counts[d[i]] = (counts[d[i]] || 0) + 1;
+  }
+  return counts;
 }
 
-// This function will put the cursor at the end of the yahtzlog window
-function scrollElementToEnd(element)
-{
-	element.scrollTop = element.scrollHeight;
+function getDiceSum(d) {
+  var s = 0;
+  for (var i = 0; i < d.length; i++) s += d[i];
+  return s;
 }
 
-// This function disables the 'hold' boxes so that they can't be selected until the first roll is done.  Otherwise no number will show
-function disable_hold()
-{
-	document.yahtzform.chkyahtzbox1.disabled=true;
-	document.yahtzform.chkyahtzbox2.disabled=true;
-	document.yahtzform.chkyahtzbox3.disabled=true;
-	document.yahtzform.chkyahtzbox4.disabled=true;
-	document.yahtzform.chkyahtzbox5.disabled=true;
+// Upper section: Ones through Sixes
+function calcUpper(d, face) {
+  var count = 0;
+  for (var i = 0; i < d.length; i++) {
+    if (d[i] === face) count++;
+  }
+  return count * face;
 }
 
-// This function enables the 'hold' boxes so that you can now select which dice to keep.  This has to happen after the initial role
-function enable_hold()
-{
-	for(x=1; x<6; x++)
-	{
-		document.yahtzform.chkyahtzbox1.disabled=false;
-		document.yahtzform.chkyahtzbox2.disabled=false;
-		document.yahtzform.chkyahtzbox3.disabled=false;
-		document.yahtzform.chkyahtzbox4.disabled=false;
-		document.yahtzform.chkyahtzbox5.disabled=false;
-	}
+// 3 of a Kind: At least 3 of any number, scores sum of all 5 dice
+function calcThreeOfAKind(d) {
+  var counts = getDiceCounts(d);
+  for (var val in counts) {
+    if (counts[val] >= 3) return getDiceSum(d);
+  }
+  return 0;
 }
 
-// This function checks if the game is over; checks for the bonus (top half >=63) and applies it to the total score if applicable
-function score_checker()
-{
-	// var name=document.yahtzform.yahtzplayer.value;
-	var currentTime=new Date();
-	var month=currentTime.getMonth()+1;
-	var day=currentTime.getDate();
-	var year=currentTime.getFullYear();
-	var currentTime=new Date();
-	var hours=currentTime.getHours();
-	var minutes=currentTime.getMinutes();
-	if (minutes < 10)
-	{
-		minutes="0"+minutes;
-	}
-	var stamp=(month + "/" + day + "/" + year + " @ " +hours+ ":" +minutes);
-	var total=(Number(document.yahtzform.yahtzmsg.value));
-	for(x=1; x<14; x++)
-	{
-		if((yahtzbox_array[x].value!="")&&(x==13))
-		{
-			yahtzlogger("Game over...");
-			alert("Game over...");
-			if(document.yahtzform.runbonus.value>=63)
-			{
-				yahtzlogger("You finished with " +total+ " points...");
-				alert("You finished with " +total+ " points...");
-				yahtzlogger("You earned the 35 bonus points...");
-				alert("You earned the 35 bonus points...");
-				total=total+35;
-				yahtzlogger("Your new total is now " +total+ " points...");
-				document.yahtzform.yahtzmsg.value=total;
-				alert("Your new total is now " +total+ " points...");
-				yahtzrecords(name+ " - " +total+ " - " +stamp);
-				// document.yahtzform.nextbutton.disabled=true;
-			}
-			else
-			{
-				yahtzlogger("You didn't earn the bonus points...");
-				alert("You didn't earn the bonus points...");
-				yahtzlogger("You finished with " +total+ " points...");
-				alert("You finished with " +total+ " points...");
-				yahtzrecords(name+ " - " +total+ " - " +stamp);
-				// document.yahtzform.nextbutton.disabled=true;
-			}
-		}
-		else if(yahtzbox_array[x].value=="x")
-		{
-				
-		}
-		else
-		{
-			x=14;
-			break;
-		}
-	}
+// 4 of a Kind: At least 4 of any number, scores sum of all 5 dice
+function calcFourOfAKind(d) {
+  var counts = getDiceCounts(d);
+  for (var val in counts) {
+    if (counts[val] >= 4) return getDiceSum(d);
+  }
+  return 0;
 }
 
-// This function disables a few buttons after the users saves or wastes their round
-function yahtzdisable(done)
-{
-	var yahtzdisableindex=document.yahtzform.yahtzmenu.selectedIndex;
-	yahtzbox_array[yahtzdisableindex].value=done;
-	document.yahtzform.rollbutton.disabled=true;
-	document.yahtzform.standbutton.disabled=true;
-	document.yahtzform.wastebutton.disabled=true;
-	// document.yahtzform.nextbutton.disabled=false;
+// Full House: 3 of one number and 2 of another (or 5 of a kind under official Yahtzee Joker rules). Scores 25.
+function calcFullHouse(d) {
+  var counts = getDiceCounts(d);
+  var vals = Object.values ? Object.values(counts) : [];
+  if (vals.length === 0) {
+    for (var k in counts) vals.push(counts[k]);
+  }
+  vals.sort(function (a, b) { return b - a; });
+  if ((vals[0] === 3 && vals[1] === 2) || vals[0] === 5) {
+    return 25;
+  }
+  return 0;
 }
 
-// This function rolls the random di's for the game
-function roll()
-{
-	var turn=(Number(document.yahtzform.yahtzturn.value));
-	// document.yahtzform.nextbutton.disabled=true;
-	++turn;
-	document.yahtzform.yahtzturn.value=turn;
-	enable_hold();
-	if(turn>=3)
-	{
-		document.yahtzform.rollbutton.disabled=true;
-	}
-	if(document.yahtzform.chkyahtzbox1.checked!=true)
-	{
-		var num1=(Math.round(Math.random()*5)+1);
-		document.yahtzform.yahtzdice1.value=num1;
-	}
-	if(document.yahtzform.chkyahtzbox2.checked!=true)
-	{
-		var num2=(Math.round(Math.random()*5)+1);
-		document.yahtzform.yahtzdice2.value=num2;
-	}
-	if(document.yahtzform.chkyahtzbox3.checked!=true)
-	{
-		var num3=(Math.round(Math.random()*5)+1);
-		document.yahtzform.yahtzdice3.value=num3;
-	}
-	if(document.yahtzform.chkyahtzbox4.checked!=true)
-	{
-		var num4=(Math.round(Math.random()*5)+1);
-		document.yahtzform.yahtzdice4.value=num4;
-	}
-	if(document.yahtzform.chkyahtzbox5.checked!=true)
-	{
-		var num5=(Math.round(Math.random()*5)+1);
-	document.yahtzform.yahtzdice5.value=num5;
-	}
+// Small Straight: 4 consecutive numbers (1-2-3-4, 2-3-4-5, or 3-4-5-6). Scores 30.
+function calcSmallStraight(d) {
+  var has1 = d.indexOf(1) !== -1;
+  var has2 = d.indexOf(2) !== -1;
+  var has3 = d.indexOf(3) !== -1;
+  var has4 = d.indexOf(4) !== -1;
+  var has5 = d.indexOf(5) !== -1;
+  var has6 = d.indexOf(6) !== -1;
+
+  if (has1 && has2 && has3 && has4) return 30;
+  if (has2 && has3 && has4 && has5) return 30;
+  if (has3 && has4 && has5 && has6) return 30;
+  return 0;
 }
 
-// This function will let you pick what category you would like to accept a zero for
-function wastemy()
-{
-	var yahtzwasteindex=document.yahtzform.yahtzmenu.selectedIndex;
-	var num=new Array();
-	num[0]=(Number(document.yahtzform.yahtzdice1.value));
-	num[1]=(Number(document.yahtzform.yahtzdice2.value));
-	num[2]=(Number(document.yahtzform.yahtzdice3.value));
-	num[3]=(Number(document.yahtzform.yahtzdice4.value));
-	num[4]=(Number(document.yahtzform.yahtzdice5.value));
+// Large Straight: 5 consecutive numbers (1-2-3-4-5 or 2-3-4-5-6). Scores 40.
+function calcLargeStraight(d) {
+  var has1 = d.indexOf(1) !== -1;
+  var has2 = d.indexOf(2) !== -1;
+  var has3 = d.indexOf(3) !== -1;
+  var has4 = d.indexOf(4) !== -1;
+  var has5 = d.indexOf(5) !== -1;
+  var has6 = d.indexOf(6) !== -1;
 
-	if(Number(document.yahtzform.yahtzturn.value==0))
-	{
-		yahtzlogger("You haven't rolled the dice yet...");
-	}
-	else if(yahtzwasteindex==0)
-	{
-		yahtzlogger("You have to choose a category first...");
-	}
-
-	else if(yahtzbox_array[yahtzwasteindex].value=="x")
-	{
-		yahtzlogger("You already used this category...");
-	}
-	else
-	{
-		yahtzdisable(done);
-		x=document.yahtzform.yahtzmenu.selectedIndex;
-		yahtzlogger("You took a zero for your " +document.yahtzform.yahtzmenu.options[x].text);
-		this.nextturn();
-		score_checker();
-	}
+  if (has1 && has2 && has3 && has4 && has5) return 40;
+  if (has2 && has3 && has4 && has5 && has6) return 40;
+  return 0;
 }
 
-// This function saves your score for the round when picking the category
-function yahtzstand()
-{
-	var total=(Number(document.yahtzform.yahtzmsg.value));
-	var bonustotal=(Number(document.yahtzform.runbonus.value));
-	var yahtzstandindex=document.yahtzform.yahtzmenu.selectedIndex;
-	var yahtzstandvalue=document.forms["yahtzform"].yahtzmenu.options[yahtzstandindex].value;
-
-	var num=new Array();
-	num[0]=(Number(document.yahtzform.yahtzdice1.value));
-	num[1]=(Number(document.yahtzform.yahtzdice2.value));
-	num[2]=(Number(document.yahtzform.yahtzdice3.value));
-	num[3]=(Number(document.yahtzform.yahtzdice4.value));
-	num[4]=(Number(document.yahtzform.yahtzdice5.value));
-
-	var sum=(Number(num[0]+num[1]+num[2]+num[3]+num[4]));
-	if(Number(document.yahtzform.yahtzturn.value==0))
-	{
-		yahtzlogger("You haven't rolled the dice yet...")
-	}
-	else if(yahtzstandindex==0)
-	{
-		yahtzlogger("You have to choose a category first...");
-	}
-	else if(yahtzbox_array[yahtzstandindex].value=="x")
-	{
-		yahtzlogger("You already used this category...");
-	}
-	else
-	{
-		//#region 1's
-		if(yahtzstandindex==1) // 1's
-		{
-			if(((((num[0]!=1)&&(num[1]!=1))&&(num[2]!=1))&&(num[3]!=1))&&(num[4]!=1))
-			{
-				yahtzlogger("You don't have any 1's...");
-			}
-			else
-			{
-				var onesum=0;
-				for(x=0; x<5; x++)
-				{
-					if (num[x]==1)
-					{
-						onesum=onesum+1;
-					}
-					else
-					{}
-				}
-				document.yahtzform.yahtzmsg.value=onesum+total;
-				document.yahtzform.runbonus.value=onesum+bonustotal;
-				yahtzdisable(done);
-				yahtzlogger("--earned " +onesum+ " points for your 1's");
-				saveSuccessful=true;
-				this.nextturn();
-				score_checker();
-			}
-		}
-	//#endregion
-
-		//#region 2's
-		else if(yahtzstandindex==2) // 2's
-		{
-			if(((((num[0]!=2)&&(num[1]!=2))&&(num[2]!=2))&&(num[3]!=2))&&(num[4]!=2))
-			{
-				yahtzlogger("You don't have any 2's...");
-			}
-			else
-			{
-				var twosum=0;
-				for(x=0; x<5; x++)
-				{
-					if (num[x]==2)
-					{
-						twosum=twosum+2;
-					}
-					else
-					{
-
-					}
-				}
-				document.yahtzform.yahtzmsg.value=twosum+total;
-				document.yahtzform.runbonus.value=twosum+bonustotal;
-				yahtzdisable(done);
-				yahtzlogger("--earned " +twosum+ " points for your 2's");
-				this.nextturn();
-				score_checker();
-			}
-		}
-		//#endregion
-
-		//#region 3's
-		else if(yahtzstandindex==3) // 3's
-		{
-			if(((((num[0]!=3)&&(num[1]!=3))&&(num[2]!=3))&&(num[3]!=3))&&(num[4]!=3))
-			{
-				yahtzlogger("You don't have any 3's...");
-			}
-			else
-			{
-				var threesum=0;
-				for(x=0; x<5; x++)
-				{
-					if(num[x]==3)
-					{
-						threesum=threesum+3;
-					}
-					else
-					{
-
-					}
-				}
-				document.yahtzform.yahtzmsg.value=threesum+total;
-				document.yahtzform.runbonus.value=threesum+bonustotal;
-				yahtzdisable(done);
-				yahtzlogger("--earned " +threesum+ " points for your 3's");
-				this.nextturn();
-				score_checker();
-			}
-		}
-		//#endregion
-
-		//#region 4's
-		else if(yahtzstandindex==4) // 4's
-		{
-			if(((((num[0]!=4)&&(num[1]!=4))&&(num[2]!=4))&&(num[3]!=4))&&(num[4]!=4))
-			{
-				yahtzlogger("You don't have any 4's...");
-			}
-			else
-			{
-				var foursum=0;
-				for(x=0; x<5; x++)
-				{
-					if(num[x]==4)
-					{
-						foursum=foursum+4;
-					}
-					else
-					{
-
-					}
-				}
-				document.yahtzform.yahtzmsg.value=foursum+total;
-				document.yahtzform.runbonus.value=foursum+bonustotal;
-				yahtzdisable(done);
-				yahtzlogger("--earned " +foursum+ " points for your 4's");
-				this.nextturn();
-				score_checker();
-			}
-		}
-		//#endregion
-
-		//#region 5's
-		else if(yahtzstandindex==5) // 5's
-		{
-			if(((((num[0]!=5)&&(num[1]!=5))&&(num[2]!=5))&&(num[3]!=5))&&(num[4]!=5))
-			{
-				yahtzlogger("You don't have any 5's...");
-			}
-			else
-			{
-				var fivesum=0;
-				for(x=0; x<5; x++)
-				{
-					if(num[x]==5)
-					{
-						fivesum=fivesum+5;
-					}
-					else
-					{
-
-					}
-				}
-				document.yahtzform.yahtzmsg.value=fivesum+total;
-				document.yahtzform.runbonus.value=fivesum+bonustotal;
-				yahtzdisable(done);
-				yahtzlogger("--earned " +fivesum+ " points for your 5's");
-				this.nextturn();
-				score_checker();
-			}
-		}
-		//#endregion
-
-		//#region 6's
-		else if(yahtzstandindex==6) // 6's
-		{
-			if(((((num[0]!=6)&&(num[1]!=6))&&(num[2]!=6))&&(num[3]!=6))&&(num[4]!=6))
-			{
-				yahtzlogger("You don't have any 6's...");
-			}
-			else
-			{
-				var sixsum=0;
-				for(x=0; x<5; x++)
-				{
-					if(num[x]==6)
-					{
-						sixsum=sixsum+6;
-					}
-					else
-					{
-
-					}
-				}
-				document.yahtzform.yahtzmsg.value=sixsum+total;
-				document.yahtzform.runbonus.value=sixsum+bonustotal;
-				yahtzdisable(done);
-				yahtzlogger("--earned " +sixsum+ " points for your 6's");
-				this.nextturn();
-				score_checker();
-			}
-		}
-		//#endregion
-
-		//#region 3 of a kind
-		else if(yahtzstandindex==7) // 3 of a kind
-		{
-			var sum3kind=0;
-			for(x=0; x<7; x++)
-			{
-				for(y=0; y<5; y++)
-				{
-					if(num[y]==x)
-					{
-						sum3kind=sum3kind+1;
-						if(sum3kind==3)
-						{
-							document.yahtzform.yahtzmsg.value=total+sum;
-							x=7;
-							y=5;
-							yahtzdisable(done);
-							yahtzlogger("--earned " +sum+ " points for your 3 of a kind");
-							this.nextturn();
-							score_checker();
-						}
-						else if(((sum3kind<3)&&(x==6))&&(y==4))
-						{
-							yahtzlogger("you don't have 3 of a kind");
-							x=7;
-							y=5;
-						}
-						else if((sum3kind<3)&&(y==4))
-						{
-							sum3kind=0;
-						}
-						else
-						{
-
-						}
-					}
-					else if(((sum3kind<3)&&(x==6))&&(y==4))
-					{
-						yahtzlogger("you don't have 3 of a kind");
-						x=7;
-						y=5;
-					}
-					else if ((sum3kind<3)&&(y==4))
-					{
-						sum3kind=0;
-					}
-					else
-					{
-
-					}
-				}
-			}
-		}
-		//#endregion
-
-		//#region 4 of a kind
-		else if(yahtzstandindex==8) // 4 of a kind
-		{
-			var sum4kind=0;
-			for(x=0; x<7; x++)
-			{
-				for(y=0; y<5; y++)
-				{
-					if(num[y]==x)
-					{
-						sum4kind=sum4kind+1;
-						if(sum4kind==4)
-						{
-							document.yahtzform.yahtzmsg.value=total+sum;
-							x=7;
-							y=5;
-							yahtzdisable(done);
-							yahtzlogger("--earned " +sum+ " points for your 4 of a kind");
-							this.nextturn();
-							score_checker();
-						}
-						else if(((sum4kind<4)&&(x==6))&&(y==4))
-						{
-							yahtzlogger("you don't have 4 of a kind");
-							x=7;
-							y=5;
-						}
-						else if((sum4kind<4)&&(y==4))
-						{
-							sum4kind=0;
-						}
-						else
-						{
-
-						}
-					}
-					else if(((sum4kind<4)&&(x==6))&&(y==4))
-					{
-						yahtzlogger("you don't have 4 of a kind");
-						x=7;
-						y=5;
-					}
-					else if((sum4kind<4)&&(y==4))
-					{
-						sum4kind=0;
-					}
-					else
-					{
-
-					}
-				}
-			}
-		}
-		//#endregion
-
-		//#region small straight
-		else if(yahtzstandindex==9) // Small Straight
-		{
-			var smallstr8=0;
-			for(x=1; x<7; x++)
-			{
-				for(y=0; y<5; y++)
-				{
-					if(num[y]==x)
-					{
-						smallstr8=smallstr8+1;
-						if(smallstr8==4)
-						{
-							document.yahtzform.yahtzmsg.value=total+30;
-							var sum=30;
-							x=7;
-							y=5;
-							yahtzdisable(done);
-							yahtzlogger("--earned " +sum+ " points for your 4 card straight");
-							this.nextturn();
-							score_checker();
-						}
-						else if(((x==6))&&((smallstr8<5))&&(y==4))
-						{
-							yahtzlogger("you don't have a 4 card straight");
-							x=7;
-							y=5;
-						}
-						else
-						{
-							y=5;
-						}
-					}
-					else if(((x==2)&&(smallstr8==1))&&(y==4))
-					{
-						smallstr8=0;
-					}
-					else if(((x==3)&&(smallstr8<=2))&&(y==4))
-					{
-						yahtzlogger("you don't have a 4 card straight");
-						x=7;
-						y=5;
-					}
-					else if(((x==4)&&(smallstr8<=2))&&(y==4))
-					{
-						yahtzlogger("you don't have a 4 card straight");
-						x=7;
-						y=5;
-					}
-					else if(((x==5)&&(smallstr8<=3))&&(y==4))
-					{
-						yahtzlogger("you don't have a 4 card straight");
-						x=7;
-						y=5;
-					}
-					else if(((x==6)&&(smallstr8<4))&&(y==4))
-					{
-						yahtzlogger("you don't have a 4 card straight");
-						x=7;
-						y=5;
-					}
-					else
-					{
-						
-					}
-				}
-			}
-		}
-		//#endregion
-
-		//#region large straight
-		else if(yahtzstandindex==10)  // Large Straight
-		{
-			var largestr8=0;
-			for(x=1; x<7; x++)
-			{
-				for(y=0; y<5; y++)
-				{
-					if(num[y]==x)
-					{
-						largestr8=largestr8+1;
-						if(largestr8==5)
-						{
-							document.yahtzform.yahtzmsg.value=total+40;
-							var sum=40;
-							x=7;
-							y=5;
-							yahtzdisable(done);
-							yahtzlogger("--earned " +sum+ " points for your 5 card straight");
-							this.nextturn();
-							score_checker();
-						}
-						else if(((x==6))&&((largestr8<5))&&(y==4))
-						{
-							yahtzlogger("you don't have a 5 card straight");
-							x=7;
-							y=5;
-						}
-						else
-						{
-							y=5;
-						}
-					}
-					else if(((x==2)&&(largestr8<=1))&&(y==4))
-					{
-						yahtzlogger("you don't have a 5 card straight");
-						x=7;
-						y=5;
-					}
-					else if(((x==3)&&(largestr8<=2))&&(y==4))
-					{
-						yahtzlogger("you don't have a 5 card straight");
-						x=7;
-						y=5;
-					}
-					else if(((x==4)&&(largestr8<=3))&&(y==4))
-					{
-						yahtzlogger("you don't have a 5 card straight");
-						x=7;
-						y=5;
-					}
-					else if(((x==5))&&((largestr8<5))&&(y==4))
-					{
-						yahtzlogger("you don't have a 5 card straight");
-						x=7;
-						y=5;
-					}
-					else if(((x==6))&&((largestr8<5))&&(y==4))
-					{
-						yahtzlogger("you don't have a 5 card straight");
-						x=7;
-						y=5;
-					}
-					else
-					{
-
-					}
-				}
-			}
-		}
-		//#endregion
-
-		//#region full house
-		else if(yahtzstandindex==11) // FullHouse
-		{
-			var threesum=0; // variable of 3 same cards
-			var twosum=0; 	 // variable of 2 same cards
-			var threeused=0; // number on dice used for 3 of the same
-			var twoused=0;   // number on dice used for 2 of the same
-			for(x=1; x<7; x++)
-			{
-				for(y=0; y<5; y++)
-				{
-					if(num[y]==x)
-					{
-						threesum=threesum+1;
-						if(threesum==3) // if here, found 3 of a kind
-						{
-							threeused=x; // dice used for the 3 of the same
-							for(a=1; a<7; a++) 
-							{
-								for(b=0; b<5; b++)
-								{
-									if((num[b]==a)&&(num[b]!=threeused))
-									{
-										twosum=twosum+1;
-										if(twosum==2) // if here, found OTHER 2 of a kind
-										{
-											yahtzform.yahtzmsg.value=total+25
-											var sum=25;
-											yahtzdisable(done);
-											yahtzlogger("--earned " +sum+ " points for your Full House");
-											this.nextturn();
-											score_checker();
-										}
-										else if(((twosum<2)&&(a==6))&&(b==4))
-										{
-											yahtzlogger("You don't have a full house...");
-											a=7;
-											b=5;
-										}
-										else if((twosum<2)&&(b==4))
-										{
-											twosum=0;
-										}
-										else
-										{
-
-										}
-									}
-									else if(((twosum<2)&&(a==6))&&(b==4))
-									{
-										yahtzlogger("You don't have a full house...");
-										a=7;
-										b=5;
-									}
-								}
-							}
-						}
-						else if(((threesum<3)&&(x==6))&&(y==4))
-						{
-							yahtzlogger("You don't have a full house...");
-							x=7;
-							y=5;
-						}
-						else if((threesum<3)&&(y==4))
-						{
-							threesum=0;
-						}
-						else
-						{
-
-						}
-					}
-					else if (((threesum<3)&&(x==6))&&(y==4))
-					{
-						yahtzlogger("You don't have a full house...");
-						x=7;
-						y=5;
-					}
-					else if((threesum<3)&&(y==4))
-					{
-						threesum=0;
-					}
-					else
-					{
-
-					}
-				}
-			}
-		}
-		//#endregion
-
-		//#region chance
-		else if(yahtzstandindex==12) // Chance
-		{
-			document.yahtzform.yahtzmsg.value=total+sum;
-			yahtzdisable(done);
-			yahtzlogger("--earned " +sum+ " points for your chance");
-			this.nextturn();
-			score_checker();
-		}
-		//#endregion
-
-		//#region yahtzee
-		else if(yahtzstandindex==13) // Yahtzee
-		{
-			if((((num[0]!=num[1])||(num[0]!=num[2]))||(num[0]!=num[3]))||(num[0]!=num[4]))
-			{
-				yahtzlogger("You don't have a Yahtzee...");
-			}
-			if(document.yahtzform.yahtzbox13.value=="o")
-			{
-				yahtzlogger("--EARNED 100 POINTS FOR YOUR SECOND YAHTZEE!!!");
-				document.yahtzform.yahtzmsg.value=total+100;
-				yahtzdisable(first);
-				this.nextturn();
-				score_checker();
-			}
-			else
-			{
-				document.yahtzform.yahtzmsg.value=total+50;
-				yahtzlogger("--earned 50 points for your first YAHTZEE!");
-				yahtzdisable(first);
-				this.nextturn();
-				score_checker();
-			}
-		}
-		//#endregion
-
-		else
-		{
-			// nothing todo
-		}
-	}	
-}
-	
-// This function enables all of the buttons, clears all the checkboxes and starts a new turn
-function nextturn()
-{
-	document.yahtzform.chkyahtzbox1.checked=false;
-	document.yahtzform.chkyahtzbox2.checked=false;
-	document.yahtzform.chkyahtzbox3.checked=false;
-	document.yahtzform.chkyahtzbox4.checked=false;
-	document.yahtzform.chkyahtzbox5.checked=false;
-	document.yahtzform.yahtzdice1.value="";
-	document.yahtzform.yahtzdice2.value="";
-	document.yahtzform.yahtzdice3.value="";
-	document.yahtzform.yahtzdice4.value="";
-	document.yahtzform.yahtzdice5.value="";
-	document.yahtzform.yahtzmenu.selectedIndex=0;
-	document.yahtzform.yahtzturn.value=0;
-	document.yahtzform.rollbutton.disabled=false;
-	document.yahtzform.standbutton.disabled=false;
-	document.yahtzform.wastebutton.disabled=false;
-	// document.yahtzform.nextbutton.disabled=true;
-	disable_hold();
+// Yahtzee: 5 of a kind. Scores 50.
+function calcYahtzee(d) {
+  var first = d[0];
+  for (var i = 1; i < d.length; i++) {
+    if (d[i] !== first) return 0;
+  }
+  return 50;
 }
 
-// This function resets the form, enalbles all of the boxes and starts a new game
-function new_game()
-{
-  var yesno=window.confirm("Previous game will be lost.  Are you sure?");
-	if(yesno==true)
-	{
-    	var recordlist=document.yahtzform.yahtzrecords.value;
-		document.yahtzform.reset();
-		document.yahtzform.yahtzrecords.value=recordlist;
-		document.yahtzform.rollbutton.disabled=false;
-		document.yahtzform.standbutton.disabled=false;
-		document.yahtzform.wastebutton.disabled=false;
-		// document.yahtzform.nextbutton.disabled=true;
-		document.yahtzform.yahtzmsg.Value="0";
-		document.yahtzform.yahtzlog.value="Good Luck...";
-		// document.yahtzform.yahtzplayer.value="name?";
-		disable_hold();
-	}
-	else
-	{
-
-	}
+// Calculate potential score for a category index (1 to 13)
+function calculatePotentialScore(catIndex, currentDice) {
+  if (catIndex >= 1 && catIndex <= 6) {
+    return calcUpper(currentDice, catIndex);
+  }
+  switch (catIndex) {
+    case 7: return calcThreeOfAKind(currentDice);
+    case 8: return calcFourOfAKind(currentDice);
+    case 9: return calcSmallStraight(currentDice);
+    case 10: return calcLargeStraight(currentDice);
+    case 11: return calcFullHouse(currentDice);
+    case 12: return getDiceSum(currentDice); // Chance
+    case 13: return calcYahtzee(currentDice);
+    default: return 0;
+  }
 }
 
-// This function opens up a basic help alert message box -->
-function help_alert()
-{
-	alert(" roll dice = rolls the dice \n take score = saves the points for selected category \n help = displays this help text \n take zero = category accepting a zero for \n \n 4CS = 4 card straight \n 5CS = 5 card straight \n FH = full house \n 3K = 3 of a kind \n 4K = 4 of a kind \n ? = chance \n Y = yahtzee \n \n running bonus = current upper deck score \n 63 or higher gets you 35 at the end \n \n http://en.wikipedia.org/wiki/Yahtzee");
+// ========================================================
+// CORE GAMEPLAY ACTIONS
+// ========================================================
+
+// Fair dice roll using Math.floor(Math.random() * 6) + 1
+function roll() {
+  if (rollCount >= 3) {
+    yahtzlogger("-- Maximum 3 rolls reached! Please select a category to score.");
+    return;
+  }
+
+  rollCount++;
+  var rolledIndexes = [];
+
+  for (var i = 0; i < 5; i++) {
+    if (!held[i]) {
+      dice[i] = Math.floor(Math.random() * 6) + 1;
+      rolledIndexes.push(i);
+    }
+  }
+
+  // Update legacy dice values
+  if (document.yahtzform) {
+    document.yahtzform.yahtzdice1.value = dice[0];
+    document.yahtzform.yahtzdice2.value = dice[1];
+    document.yahtzform.yahtzdice3.value = dice[2];
+    document.yahtzform.yahtzdice4.value = dice[3];
+    document.yahtzform.yahtzdice5.value = dice[4];
+    document.yahtzform.yahtzturn.value = rollCount;
+  }
+
+  renderDice(rolledIndexes);
+  updatePreviews();
+  updateUI();
+
+  yahtzlogger("Roll #" + rollCount + ": [" + dice.join(", ") + "]");
+
+  // Check if rolled a Yahtzee
+  if (calcYahtzee(dice) === 50) {
+    if (firstYahtzeeScored) {
+      yahtzlogger("🎉 YAHTZEE BONUS! You rolled another 5 of a kind! (+100 pts bonus)");
+    } else {
+      yahtzlogger("🎉 YAHTZEE! 5 of a kind! Choose 'Yahtzee' to score 50 points!");
+    }
+  }
+}
+
+// Toggle hold for a die
+function toggleHold(index) {
+  if (rollCount === 0) {
+    yahtzlogger("-- Roll the dice first before holding.");
+    return;
+  }
+  held[index] = !held[index];
+
+  // Update legacy checkboxes
+  if (document.yahtzform) {
+    var chk = document.yahtzform["chkyahtzbox" + (index + 1)];
+    if (chk) chk.checked = held[index];
+  }
+
+  renderDice();
+}
+
+// Select a category from dropdown or table click
+function selectCategory(catIndex) {
+  if (categoryScores[catIndex] !== null) {
+    yahtzlogger("-- Category already scored: " + getCategoryName(catIndex));
+    return;
+  }
+
+  var select = document.yahtzform ? document.yahtzform.yahtzmenu : null;
+  if (select) {
+    select.selectedIndex = catIndex;
+  }
+
+  // Highlight selected row
+  var rows = document.querySelectorAll(".score-row");
+  rows.forEach(function (r) {
+    var idx = parseInt(r.getAttribute("data-category"), 10);
+    if (idx === catIndex) {
+      r.classList.add("selected");
+    } else {
+      r.classList.remove("selected");
+    }
+  });
+
+  if (rollCount > 0) {
+    var preview = calculatePotentialScore(catIndex, dice);
+    yahtzlogger("Selected " + getCategoryName(catIndex) + " (would score " + preview + " points).");
+  }
+}
+
+// Score the selected category (Take Score)
+function yahtzstand() {
+  if (rollCount === 0) {
+    yahtzlogger("-- You haven't rolled the dice yet!");
+    return;
+  }
+
+  var catIndex = getSelectedCategoryIndex();
+  if (catIndex === 0 || isNaN(catIndex)) {
+    yahtzlogger("-- Please choose a category first.");
+    return;
+  }
+
+  if (categoryScores[catIndex] !== null) {
+    yahtzlogger("-- You already used this category!");
+    return;
+  }
+
+  // Check for Yahtzee Bonus (+100) if user already has Yahtzee = 50 and rolled another Yahtzee
+  var isCurrentYahtzee = (calcYahtzee(dice) === 50);
+  if (isCurrentYahtzee && categoryScores[13] === 50) {
+    yahtzeeBonus++;
+    totalScore += 100;
+    yahtzlogger("★ YAHTZEE BONUS! +100 points awarded!");
+  }
+
+  var earnedPoints = calculatePotentialScore(catIndex, dice);
+
+  // If points are 0, check if this is intentional or if they should take zero
+  if (earnedPoints === 0 && catIndex !== 12) { // 12 is chance which is always sum
+    var confirmZero = window.confirm(
+      "Your dice roll gives 0 points for " + getCategoryName(catIndex) + ".\nAre you sure you want to take 0 for this category?"
+    );
+    if (!confirmZero) {
+      yahtzlogger("-- Scoring cancelled. Select a different category or re-roll.");
+      return;
+    }
+  }
+
+  recordScore(catIndex, earnedPoints);
+}
+
+// Take zero for a category (Scratch)
+function wastemy() {
+  if (rollCount === 0) {
+    yahtzlogger("-- You haven't rolled the dice yet!");
+    return;
+  }
+
+  var catIndex = getSelectedCategoryIndex();
+  if (catIndex === 0 || isNaN(catIndex)) {
+    yahtzlogger("-- Please choose a category first to take a zero.");
+    return;
+  }
+
+  if (categoryScores[catIndex] !== null) {
+    yahtzlogger("-- You already used this category!");
+    return;
+  }
+
+  var confirmScratch = window.confirm("Are you sure you want to take a ZERO for " + getCategoryName(catIndex) + "?");
+  if (!confirmScratch) return;
+
+  recordScore(catIndex, 0);
+}
+
+// Record score and advance turn
+function recordScore(catIndex, points) {
+  categoryScores[catIndex] = points;
+  if (catIndex === 13 && points === 50) {
+    firstYahtzeeScored = true;
+  }
+
+  // Update legacy array and form boxes
+  if (document.yahtzform) {
+    var box = document.yahtzform["yahtzbox" + catIndex];
+    if (box) box.value = points;
+  }
+
+  yahtzlogger("✔ Scored " + points + " points for " + getCategoryName(catIndex) + " with [" + dice.join(", ") + "].");
+
+  recalculateTotals();
+  updateUI();
+
+  // Check if all 13 categories are scored
+  if (isGameOver()) {
+    end_game();
+  } else {
+    nextturn();
+  }
+}
+
+// Next turn setup
+function nextturn() {
+  currentTurn++;
+  rollCount = 0;
+  held = [false, false, false, false, false];
+
+  if (document.yahtzform) {
+    document.yahtzform.chkyahtzbox1.checked = false;
+    document.yahtzform.chkyahtzbox2.checked = false;
+    document.yahtzform.chkyahtzbox3.checked = false;
+    document.yahtzform.chkyahtzbox4.checked = false;
+    document.yahtzform.chkyahtzbox5.checked = false;
+    document.yahtzform.yahtzturn.value = 0;
+    document.yahtzform.yahtzmenu.selectedIndex = 0;
+  }
+
+  renderDice();
+  clearPreviews();
+  updateUI();
+  yahtzlogger("--- Turn " + currentTurn + " of 13 ---");
+}
+
+// Recalculate Upper, Bonus, Lower, and Grand Total
+function recalculateTotals() {
+  upperScore = 0;
+  for (var i = 1; i <= 6; i++) {
+    if (categoryScores[i] !== null) upperScore += categoryScores[i];
+  }
+
+  // 63 or higher gets 35 bonus points
+  bonusScore = (upperScore >= 63) ? 35 : 0;
+
+  lowerScore = 0;
+  for (var j = 7; j <= 13; j++) {
+    if (categoryScores[j] !== null) lowerScore += categoryScores[j];
+  }
+  lowerScore += (yahtzeeBonus * 100);
+
+  totalScore = upperScore + bonusScore + lowerScore;
+
+  // Update legacy form elements
+  if (document.yahtzform) {
+    document.yahtzform.runbonus.value = upperScore;
+    document.yahtzform.yahtzmsg.value = totalScore;
+  }
+}
+
+function isGameOver() {
+  for (var i = 1; i <= 13; i++) {
+    if (categoryScores[i] === null) return false;
+  }
+  return true;
+}
+
+// Game Over Handling
+function end_game() {
+  recalculateTotals();
+  updateUI();
+
+  var bonusEarnedMsg = (upperScore >= 63)
+    ? "You earned the 35 upper section bonus points! (Upper total: " + upperScore + ")"
+    : "You did not earn the 35 bonus points. (Upper total: " + upperScore + "/63)";
+
+  var yBonusMsg = (yahtzeeBonus > 0)
+    ? " Yahtzee Bonuses: +" + (yahtzeeBonus * 100) + " pts!"
+    : "";
+
+  var finalMsg = "Game Over! Final Score: " + totalScore + " points.\n" + bonusEarnedMsg + yBonusMsg;
+  yahtzlogger("========================================");
+  yahtzlogger(finalMsg);
+  yahtzlogger("========================================");
+
+  // Disable roll and score buttons
+  if (document.yahtzform) {
+    document.yahtzform.rollbutton.disabled = true;
+    document.yahtzform.standbutton.disabled = true;
+    document.yahtzform.wastebutton.disabled = true;
+  }
+
+  var playerName = getPlayerName();
+  saveHighScore(playerName, totalScore);
+
+  setTimeout(function () {
+    alert(finalMsg);
+  }, 100);
+}
+
+// Start New Game
+function new_game() {
+  var confirmNew = window.confirm("Start a new game? Current progress will be lost.");
+  if (!confirmNew) return;
+
+  dice = [1, 1, 1, 1, 1];
+  held = [false, false, false, false, false];
+  rollCount = 0;
+  currentTurn = 1;
+  totalScore = 0;
+  upperScore = 0;
+  bonusScore = 0;
+  lowerScore = 0;
+  yahtzeeBonus = 0;
+  firstYahtzeeScored = false;
+
+  for (var i = 1; i <= 13; i++) {
+    categoryScores[i] = null;
+    if (document.yahtzform && document.yahtzform["yahtzbox" + i]) {
+      document.yahtzform["yahtzbox" + i].value = "";
+    }
+  }
+
+  if (document.yahtzform) {
+    document.yahtzform.reset();
+    document.yahtzform.yahtzmsg.value = "0";
+    document.yahtzform.runbonus.value = "0";
+    document.yahtzform.yahtzturn.value = "0";
+    document.yahtzform.rollbutton.disabled = false;
+    document.yahtzform.standbutton.disabled = false;
+    document.yahtzform.wastebutton.disabled = false;
+  }
+
+  clearPreviews();
+  renderDice();
+  updateUI();
+  yahtzlogger("🎲 New game started! Roll the dice to begin.");
+}
+
+// ========================================================
+// UI RENDERING & FEEDBACK
+// ========================================================
+
+// Render 3D SVG/CSS Dice
+function renderDice(rolledIndexes) {
+  var tray = document.getElementById("diceTray");
+  if (!tray) return;
+
+  rolledIndexes = rolledIndexes || [];
+
+  for (var i = 0; i < 5; i++) {
+    var val = dice[i];
+    var isHeld = held[i];
+    var dieCard = document.getElementById("dieCard" + i);
+    if (!dieCard) continue;
+
+    if (isHeld) {
+      dieCard.classList.add("is-held");
+    } else {
+      dieCard.classList.remove("is-held");
+    }
+
+    var dieElem = dieCard.querySelector(".die");
+    if (dieElem) {
+      if (isHeld) {
+        dieElem.classList.add("held");
+      } else {
+        dieElem.classList.remove("held");
+      }
+
+      // Add roll animation if this die was just rolled
+      if (rolledIndexes.indexOf(i) !== -1) {
+        dieElem.classList.remove("rolling");
+        void dieElem.offsetWidth; // trigger reflow
+        dieElem.classList.add("rolling");
+      }
+
+      dieElem.innerHTML = getPipsHtml(val);
+    }
+  }
+}
+
+// Generate CSS Grid Pips for 1 to 6
+function getPipsHtml(num) {
+  var html = "";
+  switch (num) {
+    case 1:
+      html = '<div class="pip pip-mc"></div>';
+      break;
+    case 2:
+      html = '<div class="pip pip-tr"></div><div class="pip pip-bl"></div>';
+      break;
+    case 3:
+      html = '<div class="pip pip-tr"></div><div class="pip pip-mc"></div><div class="pip pip-bl"></div>';
+      break;
+    case 4:
+      html = '<div class="pip pip-tl"></div><div class="pip pip-tr"></div>' +
+             '<div class="pip pip-bl"></div><div class="pip pip-br"></div>';
+      break;
+    case 5:
+      html = '<div class="pip pip-tl"></div><div class="pip pip-tr"></div>' +
+             '<div class="pip pip-mc"></div>' +
+             '<div class="pip pip-bl"></div><div class="pip pip-br"></div>';
+      break;
+    case 6:
+      html = '<div class="pip pip-tl"></div><div class="pip pip-tr"></div>' +
+             '<div class="pip pip-ml"></div><div class="pip pip-mr"></div>' +
+             '<div class="pip pip-bl"></div><div class="pip pip-br"></div>';
+      break;
+    default:
+      html = '<div class="pip pip-mc"></div>';
+  }
+  return html;
+}
+
+// Update ghost score previews on scorecard
+function updatePreviews() {
+  if (rollCount === 0) {
+    clearPreviews();
+    return;
+  }
+
+  for (var i = 1; i <= 13; i++) {
+    var cell = document.getElementById("cell-score-" + i);
+    if (!cell) continue;
+
+    if (categoryScores[i] === null) {
+      var potential = calculatePotentialScore(i, dice);
+      cell.textContent = potential;
+      cell.className = "score-box-cell " + (potential > 0 ? "preview-score" : "preview-zero");
+    }
+  }
+}
+
+function clearPreviews() {
+  for (var i = 1; i <= 13; i++) {
+    var cell = document.getElementById("cell-score-" + i);
+    if (!cell) continue;
+    if (categoryScores[i] === null) {
+      cell.textContent = "-";
+      cell.className = "score-box-cell";
+    }
+  }
+}
+
+// Update all scorecard totals, badges, and controls
+function updateUI() {
+  // Update category rows
+  for (var i = 1; i <= 13; i++) {
+    var row = document.querySelector('.score-row[data-category="' + i + '"]');
+    var cell = document.getElementById("cell-score-" + i);
+    if (row && cell) {
+      if (categoryScores[i] !== null) {
+        row.classList.add("filled");
+        if (categoryScores[i] === 0) {
+          row.classList.add("zero-score");
+        } else {
+          row.classList.remove("zero-score");
+        }
+        cell.textContent = categoryScores[i];
+        cell.className = "score-box-cell";
+      } else {
+        row.classList.remove("filled", "zero-score");
+      }
+    }
+  }
+
+  // Update totals
+  setText("upperSubtotal", upperScore);
+  setText("upperBonusVal", (upperScore >= 63) ? 35 : 0);
+  setText("upperTotal", upperScore + bonusScore);
+  setText("lowerTotal", lowerScore);
+  setText("grandTotal", totalScore);
+  setText("yahtzeeBonusVal", yahtzeeBonus * 100);
+
+  // Bonus progress bar
+  var fill = document.getElementById("bonusProgressFill");
+  var text = document.getElementById("bonusProgressText");
+  if (fill && text) {
+    var pct = Math.min(100, Math.round((upperScore / 63) * 100));
+    fill.style.width = pct + "%";
+    if (upperScore >= 63) {
+      fill.classList.add("bonus-won");
+      text.textContent = upperScore + " / 63 pts (Bonus Won: +35!)";
+    } else {
+      fill.classList.remove("bonus-won");
+      text.textContent = upperScore + " / 63 pts (" + (63 - upperScore) + " needed)";
+    }
+  }
+
+  // Roll button label and state
+  var rollBtn = document.getElementById("rollBtn");
+  var rollStatusText = document.getElementById("rollStatusText");
+  if (rollBtn) {
+    if (rollCount === 0) {
+      rollBtn.innerHTML = "🎲 Roll Dice (Roll 1 of 3)";
+      rollBtn.disabled = isGameOver();
+    } else if (rollCount < 3) {
+      rollBtn.innerHTML = "🎲 Re-roll (" + (3 - rollCount) + " left)";
+      rollBtn.disabled = isGameOver();
+    } else {
+      rollBtn.innerHTML = "🎲 No Rolls Left";
+      rollBtn.disabled = true;
+    }
+  }
+
+  if (rollStatusText) {
+    rollStatusText.textContent = "Roll: " + rollCount + " / 3 | Turn: " + Math.min(currentTurn, 13) + " / 13";
+  }
+
+  // Update Dropdown options (disable already scored ones)
+  var select = document.yahtzform ? document.yahtzform.yahtzmenu : null;
+  if (select) {
+    for (var k = 1; k <= 13; k++) {
+      if (select.options[k]) {
+        var isUsed = categoryScores[k] !== null;
+        select.options[k].disabled = isUsed;
+        var baseName = getCategoryName(k);
+        select.options[k].text = isUsed ? baseName + " (Used: " + categoryScores[k] + ")" : baseName;
+      }
+    }
+  }
+}
+
+function setText(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function getCategoryName(idx) {
+  var names = [
+    "invalid", "1's", "2's", "3's", "4's", "5's", "6's",
+    "3 of a Kind", "4 of a Kind", "Small Straight", "Large Straight",
+    "Full House", "Chance", "Yahtzee"
+  ];
+  return names[idx] || "";
+}
+
+function getSelectedCategoryIndex() {
+  if (!document.yahtzform || !document.yahtzform.yahtzmenu) return 0;
+  return document.yahtzform.yahtzmenu.selectedIndex;
+}
+
+// ========================================================
+// LOGGING & HIGH SCORES (Persistent with LocalStorage)
+// ========================================================
+
+function yahtzlogger(logentry) {
+  var logger = document.getElementById("yahtzlog");
+  if (!logger && document.yahtzform) logger = document.yahtzform.yahtzlog;
+  if (logger) {
+    logger.value += (logger.value ? "\n" : "") + logentry;
+    logger.scrollTop = logger.scrollHeight;
+  }
+}
+
+function getPlayerName() {
+  var pInput = document.getElementById("yahtzplayer");
+  if (!pInput && document.yahtzform) pInput = document.yahtzform.yahtzplayer;
+  var name = pInput ? pInput.value.trim() : "";
+  return name || "Player";
+}
+
+function saveHighScore(player, score) {
+  var records = [];
+  try {
+    var saved = localStorage.getItem("yahtzee_records");
+    if (saved) records = JSON.parse(saved);
+  } catch (e) {}
+
+  var now = new Date();
+  var dateStr = (now.getMonth() + 1) + "/" + now.getDate() + "/" + now.getFullYear();
+
+  records.push({ player: player, score: score, date: dateStr });
+  records.sort(function (a, b) { return b.score - a.score; });
+  records = records.slice(0, 10); // Keep top 10
+
+  try {
+    localStorage.setItem("yahtzee_records", JSON.stringify(records));
+  } catch (e) {}
+
+  renderHighScores(records);
+}
+
+function loadHighScores() {
+  var records = [];
+  try {
+    var saved = localStorage.getItem("yahtzee_records");
+    if (saved) records = JSON.parse(saved);
+  } catch (e) {}
+
+  if (records.length === 0) {
+    // Default initial records
+    records = [
+      { player: "Champion", score: 285, date: "Classic" },
+      { player: "Pro Roller", score: 240, date: "Classic" }
+    ];
+  }
+  renderHighScores(records);
+}
+
+function renderHighScores(records) {
+  var recBox = document.getElementById("yahtzrecords");
+  if (!recBox && document.yahtzform) recBox = document.yahtzform.yahtzrecords;
+  if (!recBox) return;
+
+  var text = "🏆 TOP SCORES:\n";
+  records.forEach(function (r, i) {
+    text += (i + 1) + ". " + r.player + " - " + r.score + " pts (" + r.date + ")\n";
+  });
+  recBox.value = text;
+}
+
+// Help Modal
+function toggleHelpModal(show) {
+  var modal = document.getElementById("helpModal");
+  if (modal) {
+    if (show) modal.classList.add("active");
+    else modal.classList.remove("active");
+  }
+}
+
+function help_alert() {
+  toggleHelpModal(true);
 }
